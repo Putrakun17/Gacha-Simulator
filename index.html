@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gold Dragon Jewel Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold: #c9a84c;
+  --gold-light: #f0d080;
+  --gold-dim: #7a5c1e;
+  --ancient: #e8b4ff;
+  --ancient-glow: #cc66ff;
+  --bg-deep: #111018;
+  --bg-mid: #1a1628;
+  --bg-panel: #1e1830;
+  --bg-card: #15111f;
+  --border: rgba(201,168,76,0.2);
+  --text: #ddd5be;
+  --text-dim: #6a5e42;
+  --success: #5fffb0;
+  --danger: #ff6060;
+  --gear-stroke: #4a3a1a;
+  --gear-fill: #1e1610;
+}
+body {
+  background: var(--bg-deep);
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(40,20,60,0.6) 0%, transparent 70%),
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 65%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 12%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 72% 82%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 38%, rgba(255,255,255,0.5) 0%, transparent 100%);
+  color: var(--text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+/* HEADER */
+.header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); position: relative; }
+.header::after { content:''; position:absolute; bottom:-1px; left:50%; transform:translateX(-50%); width:140px; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+.header-eyebrow { font-size:0.7rem; letter-spacing:0.35em; color:var(--gold-dim); text-transform:uppercase; margin-bottom:0.6rem; }
+.header h1 { font-family:'Cinzel Decorative',serif; font-size:clamp(1.3rem,3.5vw,2rem); color:var(--gold-light); text-shadow:0 0 40px rgba(201,168,76,0.45); }
+
+/* LAYOUT */
+.main-layout { display:grid; grid-template-columns:320px 1fr; gap:1.25rem; align-items:start; }
+@media(max-width:720px){ .main-layout{ grid-template-columns:1fr; } }
+
+/* LEFT PANEL */
+.left-panel { background:var(--bg-panel); border:1px solid var(--border); border-radius:10px; padding:1.25rem; position:relative; overflow:hidden; }
+.left-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--gold-dim),transparent); }
+
+.item-name { font-family:'Cinzel Decorative',serif; font-size:0.75rem; color:#ff9966; text-align:center; margin-bottom:1rem; letter-spacing:0.05em; }
+
+/* TIMESAND COUNTER */
+.timesand-display {
+  display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+  margin-bottom: 1rem;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+}
+.timesand-icon { font-size: 1.4rem; }
+.timesand-counter-wrap { text-align: center; }
+.timesand-label { font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-dim); text-transform: uppercase; }
+.timesand-count {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.6rem;
+  color: var(--gold-light);
+  line-height: 1;
+  transition: color 0.3s;
+}
+.timesand-count.low { color: var(--danger); }
+.timesand-count.zero { color: var(--text-dim); }
+.timesand-slash { color: var(--text-dim); font-size: 0.9rem; align-self: flex-end; padding-bottom: 0.2rem; }
+.timesand-total { font-family: 'Cinzel Decorative', serif; font-size: 1rem; color: var(--text-dim); align-self: flex-end; padding-bottom: 0.15rem; }
+
+/* GEAR */
+.gear-container {
+  width:220px; height:220px; margin:0 auto 1rem;
+  position:relative; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; user-select:none;
+}
+.gear-container.empty { cursor: not-allowed; opacity: 0.5; }
+.gear-outer { animation:gearRotate 12s linear infinite; transform-origin:50% 50%; }
+.gear-middle { animation:gearRotate 8s linear infinite reverse; transform-origin:50% 50%; }
+.gear-inner { animation:gearRotate 5s linear infinite; transform-origin:50% 50%; }
+.gear-container.spinning .gear-outer { animation:gearFast 0.6s ease-out,gearRotate 12s linear 0.6s infinite; }
+.gear-container.spinning .gear-middle { animation:gearFastRev 0.6s ease-out,gearRotate 8s linear reverse 0.6s infinite; }
+.gear-container.spinning .gear-inner { animation:gearFast 0.6s ease-out,gearRotate 5s linear 0.6s infinite; }
+@keyframes gearRotate { to{ transform:rotate(360deg); } }
+@keyframes gearFast { 0%{transform:rotate(0)} 100%{transform:rotate(720deg)} }
+@keyframes gearFastRev { 0%{transform:rotate(0)} 100%{transform:rotate(-720deg)} }
+.item-gem {
+  position:absolute; width:56px; height:56px; border-radius:6px;
+  background:radial-gradient(circle at 35% 30%,#ff8844,#cc3300 60%,#6a1100);
+  border:2px solid rgba(255,150,80,0.6);
+  box-shadow:0 0 20px rgba(255,100,30,0.5),inset 0 0 10px rgba(255,200,100,0.3);
+  display:flex; align-items:center; justify-content:center; font-size:1.5rem; z-index:10;
+  transition: box-shadow 0.3s;
+}
+.gear-container.spinning .item-gem { box-shadow:0 0 40px rgba(255,100,30,0.9),inset 0 0 20px rgba(255,200,100,0.5); }
+
+.click-hint { text-align:center; font-size:0.75rem; color:var(--text-dim); margin-bottom:0.85rem; font-style:italic; }
+
+/* TABS */
+.tabs { display:flex; gap:0.5rem; margin-bottom:0.85rem; }
+.tab { flex:1; padding:0.4rem; border:1px solid var(--border); border-radius:5px; background:transparent; color:var(--text-dim); font-family:'Crimson Pro',serif; font-size:0.88rem; cursor:pointer; text-align:center; transition:all 0.2s; }
+.tab.active { background:rgba(201,168,76,0.1); border-color:var(--gold); color:var(--gold-light); }
+.tab:hover:not(.active) { border-color:var(--gold-dim); color:var(--text); }
+
+/* FIELDS */
+.fields { display:grid; grid-template-columns:1fr 1fr; gap:0.65rem; margin-bottom:0.85rem; }
+.field { display:flex; flex-direction:column; gap:0.3rem; }
+.field label { font-size:0.7rem; letter-spacing:0.1em; color:var(--text-dim); text-transform:uppercase; }
+.field input[type=number], .field select {
+  background:rgba(0,0,0,0.45); border:1px solid var(--border); border-radius:5px;
+  color:var(--gold-light); font-family:'Crimson Pro',serif; font-size:1rem;
+  padding:0.4rem 0.6rem; outline:none; width:100%; transition:border-color 0.2s;
+}
+.field input:focus, .field select:focus { border-color:var(--gold); }
+.field select option { background:#1a0f2e; color:var(--text); }
+
+/* BUTTONS */
+.btn-row { display:flex; gap:0.5rem; }
+.btn-roll {
+  flex:1; padding:0.75rem;
+  background:linear-gradient(135deg,#2a1a50,#3d2570);
+  border:1px solid rgba(180,140,255,0.4); border-radius:7px;
+  color:var(--ancient); font-family:'Cinzel Decorative',serif; font-size:0.8rem;
+  letter-spacing:0.08em; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
+}
+.btn-roll::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,0.07)); }
+.btn-roll:hover { background:linear-gradient(135deg,#3a2460,#4e328a); box-shadow:0 0 20px rgba(160,100,255,0.3); transform:translateY(-1px); }
+.btn-roll:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+.btn-reset {
+  padding:0.75rem 0.9rem;
+  background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:7px;
+  color:var(--text-dim); font-family:'Crimson Pro',serif; font-size:0.88rem;
+  cursor:pointer; transition:all 0.2s;
+}
+.btn-reset:hover { border-color:var(--gold-dim); color:var(--text); }
+
+/* RIGHT PANEL */
+.right-panel { display:flex; flex-direction:column; gap:1.25rem; }
+
+/* SPLIT PRE/POST */
+.split-panels { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.split-header { background:var(--bg-mid); border-bottom:1px solid var(--border); padding:0.55rem 1rem; font-family:'Cinzel Decorative',serif; font-size:0.62rem; letter-spacing:0.15em; color:var(--gold-dim); text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; }
+.split-header .roll-total { color:var(--text-dim); font-family:'Crimson Pro',serif; font-size:0.85rem; letter-spacing:0; }
+.split-header-right { border-left:1px solid var(--border); }
+.stat-slots-pre, .stat-slots-post { background:var(--bg-card); padding:0.9rem; min-height:180px; }
+.stat-slots-post { border-left:1px solid var(--border); }
+.stat-slot {
+  background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05);
+  border-radius:6px; padding:0.55rem 0.8rem; margin-bottom:0.45rem;
+  font-size:0.9rem; color:var(--text-dim); min-height:36px;
+  display:flex; align-items:center; transition:all 0.3s;
+}
+.stat-slot.target { border-color:rgba(204,102,255,0.35); color:var(--ancient); background:rgba(100,50,150,0.15); text-shadow:0 0 12px rgba(204,102,255,0.4); }
+.stat-slot.other { color:var(--text); }
+.stat-slot.win-slot { border-color:rgba(95,255,176,0.4); background:rgba(30,100,60,0.15); color:var(--success); }
+.stat-slot.reveal { animation:slotReveal 0.35s ease-out both; }
+@keyframes slotReveal { 0%{opacity:0;transform:translateY(-5px) scale(0.97)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+
+/* VERDICT */
+.verdict-strip { text-align:center; padding:0.7rem 1rem; border-radius:8px; border:1px solid; font-family:'Cinzel Decorative',serif; font-size:0.8rem; display:none; }
+.verdict-strip.show { display:block; }
+.verdict-strip.success { border-color:var(--success); background:rgba(95,255,176,0.05); color:var(--success); }
+.verdict-strip.fail { border-color:rgba(255,255,255,0.08); background:rgba(0,0,0,0.2); color:var(--text-dim); }
+
+/* HISTORY */
+.history-section { background:var(--bg-panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; display:none; }
+.history-section.show { display:block; }
+.history-head { background:var(--bg-mid); border-bottom:1px solid var(--border); padding:0.55rem 1rem; display:flex; justify-content:space-between; align-items:center; }
+.history-head-title { font-family:'Cinzel Decorative',serif; font-size:0.62rem; letter-spacing:0.15em; color:var(--gold-dim); text-transform:uppercase; }
+.history-stats { display:flex; gap:1.5rem; font-size:0.8rem; color:var(--text-dim); }
+.history-stats .hs-win { color:var(--success); }
+.history-wrap { max-height:240px; overflow-y:auto; padding:0.5rem 0.75rem; font-size:0.82rem; }
+.history-wrap::-webkit-scrollbar { width:3px; }
+.history-wrap::-webkit-scrollbar-thumb { background:var(--gold-dim); border-radius:2px; }
+.history-entry {
+  display:grid; grid-template-columns:44px 1fr 70px;
+  gap:0.5rem; align-items:center;
+  padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.03);
+}
+.history-entry:last-child { border-bottom:none; }
+.h-num { color:var(--text-dim); font-size:0.73rem; }
+.h-slots { color:var(--text-dim); }
+.h-ancient { color:var(--ancient); }
+.h-total { text-align:right; font-weight:600; }
+.h-total.win { color:var(--success); }
+.h-total.lose { color:var(--text-dim); }
+
+/* DIST */
+.dist-section { background:var(--bg-panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; display:none; }
+.dist-section.show { display:block; }
+.dist-head { background:var(--bg-mid); border-bottom:1px solid var(--border); padding:0.55rem 1rem; font-family:'Cinzel Decorative',serif; font-size:0.62rem; letter-spacing:0.15em; color:var(--gold-dim); text-transform:uppercase; }
+.dist-body { padding:0.75rem; }
+.dist-bar-wrap { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.dist-label { min-width:50px; font-size:0.7rem; color:var(--text-dim); text-align:right; }
+.dist-bg { flex:1; background:rgba(0,0,0,0.4); border-radius:3px; height:13px; overflow:hidden; }
+.dist-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#3a1460,var(--ancient-glow)); transition:width 0.4s ease; }
+.dist-val { min-width:36px; font-size:0.7rem; color:var(--text-dim); }
+.dist-val.win { color:var(--success); }
+
+/* SPARKLE */
+.sparkle { position:fixed; pointer-events:none; z-index:999; width:5px; height:5px; border-radius:50%; background:var(--ancient); animation:sparkle-fly 0.8s ease-out forwards; }
+@keyframes sparkle-fly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0)} }
+
+/* LOCK */
+.stat-slot-wrap { position:relative; margin-bottom:0.45rem; }
+.stat-slot-wrap .stat-slot { margin-bottom:0; }
+.lock-btn {
+  position:absolute; right:0.5rem; top:50%; transform:translateY(-50%);
+  background:none; border:1px solid rgba(255,255,255,0.12); border-radius:4px;
+  color:var(--text-dim); font-size:0.75rem; cursor:pointer; padding:0.15rem 0.4rem;
+  transition:all 0.2s; line-height:1; z-index:2;
+}
+.lock-btn:hover { border-color:var(--gold-dim); color:var(--gold-light); }
+.lock-btn.locked { border-color:#f0a030; color:#f0a030; background:rgba(240,160,48,0.1); }
+.stat-slot.locked-slot { border-color:rgba(240,160,48,0.5) !important; background:rgba(80,50,10,0.25) !important; }
+
+/* PAKIHA INFO */
+.pakiha-info {
+  background:var(--bg-panel); border:1px solid var(--border); border-radius:10px;
+  overflow:hidden; display:none;
+}
+.pakiha-info.show { display:block; }
+.pakiha-head {
+  background:var(--bg-mid); border-bottom:1px solid var(--border);
+  padding:0.55rem 1rem; font-family:'Cinzel Decorative',serif;
+  font-size:0.62rem; letter-spacing:0.15em; color:var(--gold-dim);
+  text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;
+}
+.pakiha-total-wrap { font-family:'Crimson Pro',serif; font-size:0.85rem; letter-spacing:0; color:var(--gold-light); }
+.pakiha-body { padding:0.75rem 1rem; display:flex; flex-wrap:wrap; gap:0.5rem; }
+.pakiha-entry {
+  background:rgba(240,160,48,0.08); border:1px solid rgba(240,160,48,0.25);
+  border-radius:6px; padding:0.35rem 0.7rem; font-size:0.82rem; color:#f0c060;
+  display:flex; align-items:center; gap:0.4rem;
+}
+.pakiha-entry .pe-slot { color:var(--text-dim); font-size:0.73rem; }
+.pakiha-entry .pe-cost { color:#f0a030; font-weight:600; }
+.pakiha-summary { padding:0.4rem 1rem 0.75rem; font-size:0.8rem; color:var(--text-dim); font-style:italic; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <p class="header-eyebrow">Gold Dragon Equipment</p>
+    <h1>Gold Dragon Jewel Simulator</h1>
+  </div>
+
+  <div class="main-layout">
+
+    <!-- LEFT -->
+    <div class="left-panel">
+      <p class="item-name" id="itemName">Gold Dragon Weapon</p>
+
+      <!-- TIMESAND COUNTER -->
+      <div class="timesand-display">
+        <span class="timesand-icon">💎</span>
+        <div class="timesand-counter-wrap">
+          <div class="timesand-label">Jewel</div>
+          <div class="timesand-count" id="tsCount">—</div>
+        </div>
+        <span class="timesand-slash">/</span>
+        <div class="timesand-total" id="tsTotal">—</div>
+      </div>
+
+      <!-- GEAR -->
+      <div class="gear-container" id="gearContainer" onclick="doRoll()">
+        <svg width="220" height="220" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0">
+          <g class="gear-outer" transform="translate(120,120)">
+            <polygon points="0,-108 12,-98 22,-105 28,-92 42,-96 44,-82 58,-82 56,-68 70,-64 64,-52 76,-44 67,-34 77,-23 65,-16 71,-3 58,1 60,15 47,16 45,30 32,27 26,41 14,35 4,47 -4,39 -14,47 -26,35 -32,41 -45,30 -47,16 -60,15 -58,1 -71,-3 -65,-16 -77,-23 -67,-34 -76,-44 -64,-52 -70,-64 -56,-68 -58,-82 -44,-82 -42,-96 -28,-92 -22,-105 -12,-98" fill="var(--gear-fill)" stroke="var(--gear-stroke)" stroke-width="1.5"/>
+            <circle r="65" fill="rgba(0,0,0,0.5)" stroke="var(--gear-stroke)" stroke-width="1.5"/>
+            <line x1="0" y1="-65" x2="0" y2="65" stroke="var(--gear-stroke)" stroke-width="1" opacity="0.35"/>
+            <line x1="-65" y1="0" x2="65" y2="0" stroke="var(--gear-stroke)" stroke-width="1" opacity="0.35"/>
+            <line x1="-46" y1="-46" x2="46" y2="46" stroke="var(--gear-stroke)" stroke-width="1" opacity="0.35"/>
+            <line x1="46" y1="-46" x2="-46" y2="46" stroke="var(--gear-stroke)" stroke-width="1" opacity="0.35"/>
+          </g>
+          <g class="gear-middle" transform="translate(120,120)">
+            <polygon points="0,-60 9,-53 16,-58 19,-49 28,-51 29,-42 38,-41 37,-32 46,-28 43,-20 51,-14 46,-7 53,-1 46,5 51,12 43,17 46,25 37,27 38,36 29,35 28,44 19,42 16,51 9,46 0,52 -9,46 -16,51 -19,42 -28,44 -29,35 -38,36 -37,27 -46,25 -43,17 -51,12 -46,5 -53,-1 -46,-7 -51,-14 -43,-20 -46,-28 -37,-32 -38,-41 -29,-42 -28,-51 -19,-49 -16,-58 -9,-53" fill="var(--gear-fill)" stroke="#5a4520" stroke-width="1.2"/>
+            <circle r="42" fill="rgba(0,0,0,0.6)" stroke="#5a4520" stroke-width="1.2"/>
+          </g>
+          <g class="gear-inner" transform="translate(120,120)">
+            <polygon points="0,-38 6,-33 10,-37 12,-31 18,-32 18,-26 24,-24 22,-18 28,-14 25,-9 30,-4 26,-0 30,4 25,9 28,14 22,18 24,24 18,26 18,32 12,31 10,37 6,33 0,38 -6,33 -10,37 -12,31 -18,32 -18,26 -24,24 -22,18 -28,14 -25,9 -30,4 -26,0 -30,-4 -25,-9 -28,-14 -22,-18 -24,-24 -18,-26 -18,-32 -12,-31 -10,-37 -6,-33" fill="#2a1e0a" stroke="#6a4a1a" stroke-width="1"/>
+            <circle r="24" fill="rgba(10,5,20,0.8)" stroke="#5a3a10" stroke-width="1"/>
+          </g>
+          <g transform="translate(120,120)">
+            <circle cx="0" cy="-90" r="2" fill="var(--gold-dim)" opacity="0.6"/>
+            <circle cx="90" cy="0" r="2" fill="var(--gold-dim)" opacity="0.6"/>
+            <circle cx="0" cy="90" r="2" fill="var(--gold-dim)" opacity="0.6"/>
+            <circle cx="-90" cy="0" r="2" fill="var(--gold-dim)" opacity="0.6"/>
+          </g>
+        </svg>
+        <div class="item-gem" id="gemEl">⚔️</div>
+      </div>
+
+      <p class="click-hint" id="clickHint">Click the gear to use a jewel</p>
+
+      <!-- TABS -->
+      <div class="tabs">
+        <button class="tab active" onclick="setPart('weapon',this)">Weapon</button>
+        <button class="tab" onclick="setPart('armor',this)">Armor</button>
+      </div>
+
+      <div class="fields">
+        <div class="field">
+          <label>Target Stat</label>
+          <select id="targetStat" onchange="onTargetStatChange()"></select>
+        </div>
+        <div class="field" id="targetPctField">
+          <label id="targetPctLabel">Min Total (%)</label>
+          <input type="number" id="targetPct" value="550" min="1" max="900" step="50">
+        </div>
+        <div class="field">
+          <label>Stat Pool</label>
+          <input type="number" id="statPool" value="8" min="2" max="20">
+        </div>
+        <div class="field">
+          <label>Jumlah Jewel</label>
+          <input type="number" id="timesandInput" value="100" min="1" max="100000">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-roll" id="startBtn" onclick="initSession()">✦ Start ✦</button>
+        <button class="btn-reset" onclick="resetSession()" title="Reset">↺</button>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-panel">
+
+      <div class="split-panels">
+        <div>
+          <div class="split-header">
+            <span>Pre-changes</span>
+            <span class="roll-total" id="preTotal">—</span>
+          </div>
+          <div class="stat-slots-pre" id="slotsPre">
+            <div class="stat-slot">—</div>
+            <div class="stat-slot">—</div>
+            <div class="stat-slot">—</div>
+            <div class="stat-slot">—</div>
+          </div>
+        </div>
+        <div>
+          <div class="split-header split-header-right">
+            <span>Post-changes</span>
+            <span class="roll-total" id="postTotal">—</span>
+          </div>
+          <div class="stat-slots-post" id="slotsPost">
+            <div class="stat-slot">—</div>
+            <div class="stat-slot">—</div>
+            <div class="stat-slot">—</div>
+            <div class="stat-slot">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="verdict-strip" id="verdictStrip"></div>
+
+      <!-- PAKIHA INFO -->
+      <div class="pakiha-info" id="pakihaInfo">
+        <div class="pakiha-head">
+          <span>🔒 Pakiha Digunakan</span>
+          <span class="pakiha-total-wrap">Total: <strong id="pakihaTotal">0</strong> Pakiha</span>
+        </div>
+        <div class="pakiha-body" id="pakihaBody"></div>
+        <div class="pakiha-summary" id="pakihaSummary"></div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="history-section" id="historySection">
+        <div class="history-head">
+          <span class="history-head-title">📜 Riwayat Roll</span>
+          <div class="history-stats">
+            <span>Roll: <strong id="hRollCount">0</strong></span>
+            <span class="hs-win">Win: <strong id="hWinCount">0</strong></span>
+            <span>Best: <strong id="hBest">—</strong></span>
+          </div>
+        </div>
+        <div class="history-wrap" id="historyWrap"></div>
+      </div>
+
+      <div class="dist-section" id="distSection">
+        <div class="dist-head">📈 Distribusi</div>
+        <div class="dist-body" id="distChart"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Per-stat value pools for Armor gacha. Each stat has its own tier set, scaled to its own max cap.
+// Physical/Magic DEF, Max HP, and Final Damage are flat numbers (not %).
+const ARMOR_STAT_VALUES = {
+  physdef:        [6000,9000,12000,15000,21000],         // Physical/Magic DEF — flat
+  maxhp:          [3000000,4500000,6000000,7500000,9000000], // Max HP — flat
+  finaldmg:       [400,480,560,640,800],                 // Final Damage — flat
+  classmastery:   [40,80,120,160,200],                   // Class Mastery 3 Skill — %
+  ultimate:       [40,80,120,160,200],                   // Ultimate Skill — %
+  '2ndspec':      [40,80,120,160,200],                   // 2nd Specialization Lv.50 Skill — %
+  mainskill:      [40,80,120,160,200],                   // Main Skill — %
+  secondaryskill: [40,80,120,160,200],                   // Secondary Skill — %
+};
+// Slot ke-4 (index 3 / slot terakhir) memakai nilai setengah dari pool normal di atas.
+const ARMOR_STAT_VALUES_HALF = Object.fromEntries(
+  Object.entries(ARMOR_STAT_VALUES).map(([key, arr]) => [key, arr.map(v => v / 2)])
+);
+// Per-stat value pools for Weapon gacha. Each stat has its own tier set,
+// scaled to that stat's own max cap. CRT and CRT Damage are flat numbers (not %).
+const WEAPON_STAT_VALUES = {
+  ancient:   [100,150,200,250,300],   // Ancient Dragon Jade Skill — max 300%
+  bloodmoon: [100,150,200,250,300],   // Blood Moon Dragon Jade Skill — max 300%
+  verdure:   [100,150,200,250,300],   // Verdure Dragon Jade Skill — max 300%
+  dreamy:    [100,150,200,250,300],   // Dreamy Dragon Jade Skill — max 300%
+  crt_dmg:   [225000,270000,315000,360000,450000], // Critical Damage — max 450.000 (flat number)
+  crt:       [50000,60000,70000,80000,100000],     // Critical — max 100.000 (flat number)
+  all_atk:   [3,4,5,6,8],                       // All Attribute ATK — max 8%
+  phys_atk:  [3,4,5,6,8],                       // Physical/Magic ATK — max 8%
+};
+// Slot ke-4 (index 3 / slot terakhir) memakai nilai setengah dari pool normal di atas.
+// Dihitung otomatis dari WEAPON_STAT_VALUES supaya selalu konsisten kalau tabel berubah.
+const WEAPON_STAT_VALUES_HALF = Object.fromEntries(
+  Object.entries(WEAPON_STAT_VALUES).map(([key, arr]) => [key, arr.map(v => v / 2)])
+);
+const LAST_SLOT_INDEX = 3; // slot ke-4 (0-indexed) — slot terakhir yang memakai pool setengah
+// Stats whose values are flat numbers, not percentages (no '%' suffix, no target/win logic).
+const FLAT_NUMBER_STATS = ['crt', 'crt_dmg', 'physdef', 'maxhp', 'finaldmg'];
+function isFlatStat(statKey) { return FLAT_NUMBER_STATS.includes(statKey); }
+function formatStatValue(statKey, val) {
+  return isFlatStat(statKey) ? val.toLocaleString('id-ID') : (val + '%');
+}
+const WEAPON_STATS = [
+  {value:'ancient',   label:'Ancient Dragon Jade Skill'},
+  {value:'bloodmoon', label:'Blood Moon Dragon Jade Skill'},
+  {value:'verdure',   label:'Verdure Dragon Jade Skill'},
+  {value:'dreamy',    label:'Dreamy Dragon Jade Skill'},
+  {value:'crt_dmg',  label:'CRT Damage'},
+  {value:'crt',       label:'CRT'},
+  {value:'all_atk',  label:'All Attribute ATK'},
+  {value:'phys_atk', label:'Physical/Magic ATK'},
+];
+const ARMOR_STATS = [
+  {value:'physdef',        label:'Physical/Magic DEF'},
+  {value:'maxhp',          label:'Max HP'},
+  {value:'finaldmg',       label:'Final Damage'},
+  {value:'classmastery',   label:'Class Mastery 3 Skill'},
+  {value:'ultimate',       label:'Ultimate Skill'},
+  {value:'2ndspec',        label:'2nd Specialization'},
+  {value:'mainskill',      label:'Main Skill'},
+  {value:'secondaryskill', label:'Secondary Skill'},
+];
+
+let currentPart = 'weapon';
+let session = null; // { remaining, total, history, wins, best, prevSlots }
+let rolling = false;
+let lockedSlots = {}; // { slotIndex: slotData }
+let pakihaLog = []; // [{slotIndex, label, pakihaUsed, rollNum}]
+const PAKIHA_PER_LOCK = 50;
+const MAX_LOCKS = 2;
+
+document.addEventListener('DOMContentLoaded', () => { updateStatDropdown('weapon'); onTargetStatChange(); });
+
+function updateStatDropdown(part) {
+  const sel = document.getElementById('targetStat');
+  const stats = part === 'weapon' ? WEAPON_STATS : ARMOR_STATS;
+  sel.innerHTML = stats.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+}
+
+// Shows/hides the "Min Total (%)" target field depending on whether the selected
+// target stat is a flat number (CRT / CRT Damage) — those have no % target.
+function onTargetStatChange() {
+  const sel = document.getElementById('targetStat');
+  const field = document.getElementById('targetPctField');
+  const flat = currentPart === 'weapon' && isFlatStat(sel.value);
+  field.style.display = flat ? 'none' : '';
+}
+
+function setPart(part, el) {
+  currentPart = part;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  updateStatDropdown(part);
+  document.getElementById('targetPct').value = part === 'weapon' ? 550 : 300;
+  document.getElementById('itemName').textContent = part === 'weapon' ? 'Gold Dragon Weapon' : 'Gold Dragon Armor';
+  document.getElementById('gemEl').textContent = part === 'weapon' ? '⚔️' : '🛡️';
+  onTargetStatChange();
+}
+
+function getTargetLabel() {
+  const sel = document.getElementById('targetStat');
+  const stats = currentPart === 'weapon' ? WEAPON_STATS : ARMOR_STATS;
+  return stats.find(s => s.value === sel.value)?.label || sel.value;
+}
+
+// Returns the value pool (array of possible roll values) for a given stat key.
+// Both Weapon and Armor stats each have their own pool (different caps).
+// slotIndex (0-3) lets the 4th slot (index 3 / slot terakhir) use the half-value pool.
+function getValuePool(statKey, slotIndex) {
+  const isLastSlot = slotIndex === LAST_SLOT_INDEX;
+  if (currentPart === 'weapon') {
+    const pool = isLastSlot ? WEAPON_STAT_VALUES_HALF : WEAPON_STAT_VALUES;
+    const fallbackPool = isLastSlot ? WEAPON_STAT_VALUES_HALF['phys_atk'] : WEAPON_STAT_VALUES['phys_atk'];
+    return pool[statKey] || fallbackPool;
+  }
+  const pool = isLastSlot ? ARMOR_STAT_VALUES_HALF : ARMOR_STAT_VALUES;
+  const fallbackPool = isLastSlot ? ARMOR_STAT_VALUES_HALF['mainskill'] : ARMOR_STAT_VALUES['mainskill'];
+  return pool[statKey] || fallbackPool;
+}
+
+function rollOne(numStats, values, targetLabel) {
+  let total = 0;
+  const slots = [];
+  const allStats = currentPart === 'weapon' ? WEAPON_STATS : ARMOR_STATS;
+  const targetKey = document.getElementById('targetStat').value;
+  const otherStats = allStats.filter(s => s.value !== targetKey);
+  for (let s = 0; s < 4; s++) {
+    // If this slot is locked, keep the locked value
+    if (lockedSlots[s]) {
+      const locked = lockedSlots[s];
+      slots.push({...locked, isLocked: true});
+      if (locked.isTarget && !isFlatStat(locked.statKey)) total += locked.val;
+      continue;
+    }
+    // Slot ke-4 (index 3 / slot terakhir) memakai pool nilai setengah dari slot 1-3.
+    const targetValues = getValuePool(targetKey, s);
+    const idx = Math.floor(Math.random() * numStats);
+    if (idx === 0) {
+      const v = targetValues[Math.floor(Math.random() * targetValues.length)];
+      if (!isFlatStat(targetKey)) total += v;
+      slots.push({isTarget: true, val: v, label: targetLabel, statKey: targetKey});
+    } else {
+      const other = otherStats[Math.floor(Math.random() * otherStats.length)];
+      const otherKey = other ? other.value : null;
+      const otherValues = other ? getValuePool(other.value, s) : values;
+      const otherVal = otherValues[Math.floor(Math.random() * otherValues.length)];
+      slots.push({isTarget: false, val: otherVal, label: other ? other.label : 'Other Stat', statKey: otherKey});
+    }
+  }
+  return {total, slots, targetIsFlat: isFlatStat(targetKey)};
+}
+
+function renderSlots(containerId, slots, target, animate) {
+  const c = document.getElementById(containerId);
+  const isPost = containerId === 'slotsPost';
+  const targetIsFlat = slots.some(sl => sl.isTarget) && isFlatStat((slots.find(sl=>sl.isTarget)||{}).statKey);
+  const isWin = !targetIsFlat && slots.reduce((s,sl) => s + (sl.isTarget ? sl.val : 0), 0) >= target;
+  const lockedCount = Object.keys(lockedSlots).length;
+  c.innerHTML = slots.map((slot, i) => {
+    let cls = 'stat-slot';
+    const isLocked = !!lockedSlots[i];
+    if (isLocked) cls += ' locked-slot';
+    else if (slot.isTarget) cls += (targetIsFlat ? ' target' : (isWin ? ' win-slot' : ' target'));
+    else cls += ' other';
+    if (animate && !isLocked) cls += ' reveal';
+    const style = animate && !isLocked ? `animation-delay:${i*0.1}s` : '';
+    const valDisplay = (slot.val !== null && slot.val !== undefined)
+      ? ' +' + formatStatValue(slot.statKey, slot.val)
+      : '';
+    const content = `${slot.label}${valDisplay}`;
+    if (isPost && session) {
+      const canLock = !isLocked && lockedCount < MAX_LOCKS;
+      const lockIcon = isLocked ? '🔒' : '🔓';
+      const lockCls = isLocked ? 'lock-btn locked' : 'lock-btn';
+      const lockTitle = isLocked ? 'Klik untuk buka lock (tidak mengembalikan Pakiha)' : (canLock ? 'Lock slot ini (50 Pakiha)' : 'Maks 2 slot terkunci');
+      const disabledAttr = (!isLocked && !canLock) ? 'disabled' : '';
+      return `<div class="stat-slot-wrap">
+        <div class="${cls}" style="${style}">${content}</div>
+        <button class="${lockCls}" title="${lockTitle}" onclick="toggleLock(${i})" ${disabledAttr}>${lockIcon}</button>
+      </div>`;
+    }
+    return `<div class="stat-slot-wrap"><div class="${cls}" style="${style}">${content}</div></div>`;
+  }).join('');
+}
+
+function toggleLock(slotIndex) {
+  if (!session || !session.prevSlots) return;
+  const slots = session.prevSlots.slots;
+  if (!slots || !slots[slotIndex]) return;
+
+  if (lockedSlots[slotIndex]) {
+    // Unlock
+    delete lockedSlots[slotIndex];
+  } else {
+    // Lock
+    if (Object.keys(lockedSlots).length >= MAX_LOCKS) return;
+    lockedSlots[slotIndex] = slots[slotIndex];
+  }
+  updatePakihaInfo();
+  // Re-render post with updated lock state
+  const target = parseInt(document.getElementById('targetPct').value) || 550;
+  renderSlots('slotsPost', slots, target, false);
+}
+
+function updatePakihaInfo() {
+  const info = document.getElementById('pakihaInfo');
+  const lockCount = Object.keys(lockedSlots).length;
+  const totalPakiha = pakihaLog.reduce((s,e) => s + e.pakihaUsed, 0);
+  if (lockCount === 0 && pakihaLog.length === 0) { info.className = 'pakiha-info'; return; }
+  info.className = 'pakiha-info show';
+  document.getElementById('pakihaTotal').textContent = totalPakiha.toLocaleString();
+  // Tampilkan ringkasan per-slot yang aktif terkunci + total pemakaian
+  const activeLockEntries = Object.entries(lockedSlots).map(([idx, slot]) => {
+    const slotRolls = pakihaLog.filter(e => e.slotIndex == idx);
+    const slotTotal = slotRolls.reduce((s,e) => s + e.pakihaUsed, 0);
+    const label = slot.label + (slot.isTarget ? ' +' + formatStatValue(slot.statKey, slot.val) : '');
+    return `<div class="pakiha-entry">
+      <span class="pe-slot">Slot ${parseInt(idx)+1}</span>
+      <span>—</span>
+      <span>${label}</span>
+      <span>—</span>
+      <span class="pe-cost">-${slotTotal} Pakiha (${slotRolls.length}x roll)</span>
+    </div>`;
+  }).join('');
+  // Slot yang sudah pernah dilock tapi sekarang tidak aktif
+  const pastSlots = [...new Set(pakihaLog.map(e => e.slotIndex))].filter(idx => !lockedSlots[idx]);
+  const pastEntries = pastSlots.map(idx => {
+    const slotRolls = pakihaLog.filter(e => e.slotIndex == idx);
+    const slotTotal = slotRolls.reduce((s,e) => s + e.pakihaUsed, 0);
+    const label = slotRolls[slotRolls.length-1].label;
+    return `<div class="pakiha-entry" style="opacity:0.5">
+      <span class="pe-slot">Slot ${idx+1}</span>
+      <span>—</span>
+      <span>${label}</span>
+      <span>—</span>
+      <span class="pe-cost">-${slotTotal} Pakiha (unlocked)</span>
+    </div>`;
+  }).join('');
+  document.getElementById('pakihaBody').innerHTML = activeLockEntries + pastEntries;
+  document.getElementById('pakihaSummary').textContent =
+    `${pakihaLog.length} roll dengan lock · ${totalPakiha} Pakiha terpakai · ${lockCount} slot sedang terkunci`;
+}
+
+function updateCounterUI() {
+  if (!session) return;
+  const el = document.getElementById('tsCount');
+  el.textContent = session.remaining.toLocaleString();
+  el.className = 'timesand-count' + (session.remaining === 0 ? ' zero' : session.remaining <= Math.ceil(session.total * 0.1) ? ' low' : '');
+  document.getElementById('tsTotal').textContent = session.total.toLocaleString();
+}
+
+function spawnSparkles() {
+  const gem = document.getElementById('gemEl');
+  const rect = gem.getBoundingClientRect();
+  const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+  for (let i = 0; i < 16; i++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    const angle = Math.PI * 2 * i / 16;
+    const dist = 60 + Math.random() * 70;
+    s.style.left = cx+'px'; s.style.top = cy+'px';
+    s.style.setProperty('--dx', Math.cos(angle)*dist+'px');
+    s.style.setProperty('--dy', Math.sin(angle)*dist+'px');
+    s.style.background = i%2===0 ? '#cc66ff' : '#f0d080';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 900);
+  }
+}
+
+function initSession() {
+  const total = Math.min(parseInt(document.getElementById('timesandInput').value)||100, 100000);
+  session = {
+    remaining: total,
+    total: total,
+    history: [],
+    wins: 0,
+    best: 0,
+    prevSlots: null,
+  };
+  updateCounterUI();
+  lockedSlots = {};
+  pakihaLog = [];
+  document.getElementById('pakihaInfo').className = 'pakiha-info';
+  document.getElementById('startBtn').textContent = '✦ Restart ✦';
+  document.getElementById('gearContainer').classList.remove('empty');
+  document.getElementById('clickHint').textContent = 'Click the gear to use a jewel';
+
+  // Clear displays
+  document.getElementById('slotsPre').innerHTML = '<div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div>';
+  document.getElementById('slotsPost').innerHTML = '<div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div>';
+  document.getElementById('preTotal').textContent = '—';
+  document.getElementById('postTotal').textContent = '—';
+  const vs = document.getElementById('verdictStrip');
+  vs.className = 'verdict-strip'; vs.textContent = '';
+  document.getElementById('historySection').className = 'history-section';
+  document.getElementById('historyWrap').innerHTML = '';
+  document.getElementById('hRollCount').textContent = '0';
+  document.getElementById('hWinCount').textContent = '0';
+  document.getElementById('hBest').textContent = '—';
+  document.getElementById('distSection').className = 'dist-section';
+}
+
+function resetSession() {
+  session = null;
+  lockedSlots = {};
+  pakihaLog = [];
+  document.getElementById('pakihaInfo').className = 'pakiha-info';
+  document.getElementById('tsCount').textContent = '—';
+  document.getElementById('tsCount').className = 'timesand-count';
+  document.getElementById('tsTotal').textContent = '—';
+  document.getElementById('startBtn').textContent = '✦ Start ✦';
+  document.getElementById('gearContainer').classList.remove('empty');
+  document.getElementById('clickHint').textContent = 'Click the gear to use a jewel';
+  document.getElementById('slotsPre').innerHTML = '<div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div>';
+  document.getElementById('slotsPost').innerHTML = '<div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div><div class="stat-slot">—</div>';
+  document.getElementById('preTotal').textContent = '—';
+  document.getElementById('postTotal').textContent = '—';
+  const vs = document.getElementById('verdictStrip');
+  vs.className = 'verdict-strip'; vs.textContent = '';
+  document.getElementById('historySection').className = 'history-section';
+  document.getElementById('distSection').className = 'dist-section';
+}
+
+function doRoll() {
+  if (rolling) return;
+  if (!session) { initSession(); return; }
+  if (session.remaining <= 0) return;
+
+  rolling = true;
+  const target      = parseInt(document.getElementById('targetPct').value) || 550;
+  const numStats    = parseInt(document.getElementById('statPool').value) || 8;
+  const values      = currentPart === 'weapon' ? Object.values(WEAPON_STAT_VALUES)[0] : Object.values(ARMOR_STAT_VALUES)[0];
+  const targetLabel = getTargetLabel();
+  const targetKey   = document.getElementById('targetStat').value;
+  const targetIsFlat = isFlatStat(targetKey);
+
+  // Consume 4 jewels per click (or however many remain)
+  const useCount = Math.min(4, session.remaining);
+  const rollStart = session.total - session.remaining + 1;
+  session.remaining -= useCount;
+  updateCounterUI();
+
+  // Spin gear
+  const gc = document.getElementById('gearContainer');
+  gc.classList.add('spinning');
+  setTimeout(() => gc.classList.remove('spinning'), 650);
+
+  setTimeout(() => {
+    let bestResult = null;
+    for (let i = 0; i < useCount; i++) {
+      const result = rollOne(numStats, values, targetLabel);
+      // For flat stats (CRT/CRT Damage) there's no target/win — just track the highest single-slot value seen.
+      const compareVal = targetIsFlat
+        ? Math.max(...result.slots.filter(s => s.isTarget).map(s => s.val), 0)
+        : result.total;
+      if (!bestResult || compareVal > bestResult.compareVal) bestResult = {...result, compareVal};
+      const rollNum = rollStart + i;
+      const isWin = !targetIsFlat && result.total >= target;
+      if (isWin) session.wins++;
+      if (compareVal > session.best) session.best = compareVal;
+      session.history.push({ rollNum, total: result.total, compareVal, slots: result.slots, isWin, targetIsFlat });
+    }
+
+    const isWin = !targetIsFlat && bestResult.total >= target;
+
+    // Move previous post to pre
+    if (session.prevSlots) {
+      renderSlots('slotsPre', session.prevSlots.slots, target, false);
+      document.getElementById('preTotal').textContent = session.prevSlots.targetIsFlat
+        ? session.prevSlots.compareVal.toLocaleString('id-ID')
+        : session.prevSlots.total + '%';
+    }
+
+    renderSlots('slotsPost', bestResult.slots, target, true);
+    document.getElementById('postTotal').textContent = targetIsFlat
+      ? bestResult.compareVal.toLocaleString('id-ID')
+      : bestResult.total + '%';
+
+    // Verdict
+    const rollLabel = useCount > 1
+      ? `Roll #${rollStart}–${rollStart + useCount - 1} (${useCount}x Jewel)`
+      : `Roll #${rollStart}`;
+    const vs = document.getElementById('verdictStrip');
+    if (targetIsFlat) {
+      vs.className = 'verdict-strip show fail';
+      vs.textContent = `${rollLabel} — Best ${targetLabel}: ${bestResult.compareVal.toLocaleString('id-ID')}`;
+    } else {
+      vs.className = 'verdict-strip show ' + (isWin ? 'success' : 'fail');
+      vs.textContent = isWin
+        ? `✦ Berhasil! ${bestResult.total}% ≥ ${target}% — ${rollLabel} ✦`
+        : `${rollLabel} — Best: ${bestResult.total}% (target ${target}%)`;
+      if (isWin) spawnSparkles();
+    }
+
+    session.prevSlots = { slots: bestResult.slots, total: bestResult.total, compareVal: bestResult.compareVal, targetIsFlat };
+
+    // Catat pemakaian Pakiha per slot terkunci per roll
+    const activeLocks = Object.entries(lockedSlots);
+    if (activeLocks.length > 0) {
+      activeLocks.forEach(([idx, slot]) => {
+        const label = slot.label + (slot.isTarget ? ' +' + formatStatValue(slot.statKey, slot.val) : '');
+        pakihaLog.push({ slotIndex: parseInt(idx), label, pakihaUsed: PAKIHA_PER_LOCK, rollNum: rollStart });
+      });
+      updatePakihaInfo();
+    }
+
+    updateHistory();
+
+    if (session.remaining === 0) {
+      document.getElementById('gearContainer').classList.add('empty');
+      document.getElementById('clickHint').textContent = 'Jewel depleted — click Restart to reset';
+      renderDist(session.history, target);
+    }
+
+    rolling = false;
+  }, 350);
+}
+
+function updateHistory() {
+  if (!session) return;
+  const h = session.history;
+  document.getElementById('historySection').className = 'history-section show';
+  document.getElementById('hRollCount').textContent = h.length.toLocaleString();
+  document.getElementById('hWinCount').textContent = session.wins.toLocaleString();
+  const lastFlat = h.length > 0 && h[h.length-1].targetIsFlat;
+  document.getElementById('hBest').textContent = session.best > 0
+    ? (lastFlat ? session.best.toLocaleString('id-ID') : session.best + '%')
+    : '—';
+
+  // Show last 200, newest first
+  const show = h.slice().reverse().slice(0, 200);
+  document.getElementById('historyWrap').innerHTML = show.map(e => {
+    const slotStr = e.slots.map(s =>
+      s.isTarget ? `<span class="h-ancient">✦${formatStatValue(s.statKey, s.val)}</span>` : `<span style="color:var(--text-dim)">—</span>`
+    ).join(' ');
+    const totalDisplay = e.targetIsFlat
+      ? (e.compareVal !== undefined ? e.compareVal.toLocaleString('id-ID') : e.total.toLocaleString('id-ID'))
+      : e.total + '%';
+    return `<div class="history-entry">
+      <span class="h-num">#${e.rollNum}</span>
+      <span class="h-slots">${slotStr}</span>
+      <span class="h-total ${e.isWin?'win':'lose'}">${totalDisplay}${e.isWin?' ✓':''}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderDist(history, target) {
+  const ds = document.getElementById('distSection');
+  ds.className = 'dist-section show';
+  const targetKey = document.getElementById('targetStat').value;
+  const targetIsFlat = isFlatStat(targetKey);
+  const valueSet = getValuePool(targetKey, 0);
+  const valueSetHalf = getValuePool(targetKey, LAST_SLOT_INDEX);
+  // Step pakai nilai terkecil gabungan (termasuk pool setengah dari slot ke-4) agar bucket tetap presisi.
+  const step = Math.min(valueSet[0], valueSetHalf[0]);
+  const maxPossible = targetIsFlat ? valueSet[valueSet.length-1] : valueSet[valueSet.length-1] * 4;
+  const buckets = {};
+  for (let v = 0; v <= maxPossible; v += step) buckets[v] = 0;
+  history.forEach(e => {
+    const raw = targetIsFlat ? (e.compareVal !== undefined ? e.compareVal : e.total) : e.total;
+    const key = Math.min(Math.floor(raw / step) * step, maxPossible);
+    buckets[key] = (buckets[key] || 0) + 1;
+  });
+  const count = history.length;
+  const maxCount = Math.max(...Object.values(buckets));
+  let html = '';
+  for (const [val, cnt] of Object.entries(buckets)) {
+    const pct = (cnt / count * 100);
+    const barW = maxCount > 0 ? (cnt / maxCount * 100).toFixed(1) : 0;
+    const isWin = !targetIsFlat && parseFloat(val) >= target;
+    const label = targetIsFlat ? Math.round(parseFloat(val)).toLocaleString('id-ID') : parseFloat(val) + '%';
+    html += `<div class="dist-bar-wrap">
+      <span class="dist-label">${label}</span>
+      <div class="dist-bg"><div class="dist-fill" style="width:${barW}%;${isWin?'background:linear-gradient(90deg,#1a5530,var(--success))':''}"></div></div>
+      <span class="dist-val ${isWin?'win':''}">${pct.toFixed(1)}%</span>
+    </div>`;
+  }
+  document.getElementById('distChart').innerHTML = html;
+}
+</script>
+</body>
+</html>
